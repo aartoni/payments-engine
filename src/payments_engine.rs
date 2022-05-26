@@ -167,4 +167,24 @@ mod tests {
         expected.resolve(dec!(1));
         assert_eq!(engine.accounts.get(&1).unwrap(), &expected);
     }
+
+    #[test]
+    fn test_resolve_without_dispute() {
+        // Create transactions
+        let deposit_tx = Transaction::new(TransactionKind::Deposit, 1, 1, Some(dec!(1)));
+        let resolve_tx = Transaction::new(TransactionKind::Resolve, 1, 1, None);
+
+        // Create test engine and account
+        let mut engine = PaymentsEngine::new();
+        let mut expected = Account::new(1);
+
+        // Deposit on both sides
+        engine.execute(deposit_tx);
+        expected.deposit(dec!(1));
+        assert_eq!(engine.accounts.get(&1).unwrap(), &expected);
+
+        // Resolve on both sides
+        engine.execute(resolve_tx);
+        assert_eq!(engine.accounts.get(&1).unwrap(), &expected);
+    }
 }
