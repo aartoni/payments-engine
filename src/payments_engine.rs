@@ -16,7 +16,7 @@ impl PaymentsEngine {
 
     pub fn execute(&mut self, tx: Transaction) {
         match tx.kind {
-            TransactionKind::Deposit | TransactionKind::Withdraw => {
+            TransactionKind::Deposit | TransactionKind::Withdrawal => {
                 let account = self.accounts
                     .entry(tx.client_id)
                     .or_insert_with(|| Account::new(tx.client_id));
@@ -61,7 +61,7 @@ mod tests {
     fn test_withdraw() {
         // Create transactions
         let deposit_tx = Transaction::new(TransactionKind::Deposit, 1, 1, dec!(1));
-        let withdraw_tx = Transaction::new(TransactionKind::Withdraw, 1, 1, dec!(1));
+        let withdraw_tx = Transaction::new(TransactionKind::Withdrawal, 1, 1, dec!(1));
 
         // Create test engine and account
         let mut engine = PaymentsEngine::new();
