@@ -74,7 +74,7 @@ fn handle_claim(kind: &TransactionKind, client: &mut Account, amount: Decimal) {
     match kind {
         TransactionKind::Dispute => client.dispute(amount),
         TransactionKind::Resolve => client.resolve(amount),
-        _ => panic!("Unsupported"),
+        _ => client.chargeback(amount),
     }
 }
 
@@ -186,5 +186,72 @@ mod tests {
         // Resolve on both sides
         engine.execute(resolve_tx);
         assert_eq!(engine.accounts.get(&1).unwrap(), &expected);
+    }
+
+    #[test]
+    fn test_chargeback() {
+        // Create transactions
+        let deposit_tx = Transaction::new(TransactionKind::Deposit, 1, 1, Some(dec!(1)));
+        let dispute_tx = Transaction::new(TransactionKind::Dispute, 1, 1, None);
+        let chargeback_tx = Transaction::new(TransactionKind::Chargeback, 1, 1, None);
+
+        // Create test engine and account
+        let mut engine = PaymentsEngine::new();
+        let mut expected = Account::new(1);
+
+        // Deposit on both sides
+        engine.execute(deposit_tx);
+        expected.deposit(dec!(1));
+        assert_eq!(engine.accounts.get(&1).unwrap(), &expected);
+
+        // Dispute on both sides
+        engine.execute(dispute_tx);
+        expected.dispute(dec!(1));
+        assert_eq!(engine.accounts.get(&1).unwrap(), &expected);
+
+        // Charge back on both sides
+        engine.execute(chargeback_tx);
+        expected.chargeback(dec!(1));
+        assert_eq!(engine.accounts.get(&1).unwrap(), &expected);
+    }
+
+    #[test]
+    fn test_chargeback_without_dispute() {
+        // Create transactions
+        let deposit_tx = Transaction::new(TransactionKind::Deposit, 1, 1, Some(dec!(1)));
+        let chargeback_tx = Transaction::new(TransactionKind::Chargeback, 1, 1, None);
+
+        // Create test engine and account
+        let mut engine = PaymentsEngine::new();
+        let mut expected = Account::new(1);
+
+        // Deposit on both sides
+        engine.execute(deposit_tx);
+        expected.deposit(dec!(1));
+        assert_eq!(engine.accounts.get(&1).unwrap(), &expected);
+
+        // Resolve on both sides
+        engine.execute(chargeback_tx);
+        assert_eq!(engine.accounts.get(&1).unwrap(), &expected);
+    }
+
+    #[test]
+    fn test_chargeback_clears_flag() {
+        // Create transactions
+        let deposit_tx = Transaction::new(TransactionKind::Deposit, 1, 1, Some(dec!(1)));
+        let dispute_tx = Transaction::new(TransactionKind::Dispute, 1, 1, None);
+        let chargeback_tx = Transaction::new(TransactionKind::Chargeback, 1, 1, None);
+
+        // Create test engine and account
+        let mut engine = PaymentsEngine::new();
+
+        // Switch flag state
+        engine.execute(deposit_tx);
+        engine.execute(dispute_tx);
+        assert_eq!(engine.history.get(&1).unwrap().disputed, true);
+
+        // Switch flag state back
+        engine.execute(chargeback_tx);
+        assert_eq!(engine.history.get(&1).unwrap().disputed, false);
     }
 }

@@ -55,6 +55,16 @@ impl Account {
         self.held -= amount;
         self.available += amount;
     }
+
+    pub fn chargeback(&mut self, amount: Decimal) {
+        if amount > self.held {
+            return;
+        }
+
+        self.held -= amount;
+        self.total -= amount;
+        self.locked = true;
+    }
 }
 
 #[cfg(test)]
@@ -132,5 +142,29 @@ mod tests {
         assert_eq!(account.available, dec!(10));
         assert_eq!(account.held, dec!(0));
         assert_eq!(account.total, dec!(10));
+    }
+
+    #[test]
+    fn test_chargeback() {
+        let mut account = Account::new(1);
+        account.deposit(dec!(10));
+
+        // Dispute a valid amount
+        account.dispute(dec!(5));
+        assert_eq!(account.available, dec!(5));
+        assert_eq!(account.held, dec!(5));
+        assert_eq!(account.total, dec!(10));
+
+        // Charge a valid amount back
+        account.chargeback(dec!(5));
+        assert_eq!(account.available, dec!(5));
+        assert_eq!(account.held, dec!(0));
+        assert_eq!(account.total, dec!(5));
+
+        // Try to charge an invalid amount back
+        account.chargeback(dec!(5));
+        assert_eq!(account.available, dec!(5));
+        assert_eq!(account.held, dec!(0));
+        assert_eq!(account.total, dec!(5));
     }
 }
