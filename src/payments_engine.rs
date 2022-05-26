@@ -21,31 +21,42 @@ impl PaymentsEngine {
     pub fn execute(&mut self, tx: Transaction) {
         match tx.kind {
             TransactionKind::Deposit | TransactionKind::Withdrawal => {
+                // Find the account, insert if missing
                 let account = self.accounts
                     .entry(tx.client_id)
                     .or_insert_with(|| Account::new(tx.client_id));
 
+                // Perform the transaction
                 if handle_transfer(&tx.kind, account, tx.amount.unwrap()) {
+                    // Transaction succeded, add it to the history
                     self.history.insert(tx.id, tx);
                 }
             },
-            TransactionKind::Dispute => {
+            _ => {
                 let disputed_tx = self.history.get_mut(&tx.id);
 
-                // If the target tx doesn't exist ignore this tx
+                // If the disputed tx doesn't exist ignore this tx
                 if disputed_tx.is_none() {
                     return;
                 }
 
                 let disputed_tx = disputed_tx.unwrap();
 
-                // Set disputation flag for the target tx
-                disputed_tx.disputed = true;
+                // Set/check disputation flag for the disputed tx
+                if tx.kind == TransactionKind::Dispute {
+                    disputed_tx.disputed = true;
+                } else {
+                    // If the disputed tx was never disputed ignore this tx
+                    if !disputed_tx.disputed {
+                        return;
+                    }
+
+                    disputed_tx.disputed = false;
+                }
 
                 let account = self.accounts.get_mut(&tx.client_id).unwrap();
-                account.dispute(disputed_tx.amount.unwrap());
+                handle_claim(&tx.kind, account, disputed_tx.amount.unwrap());
             },
-            _ => panic!("Unsupported")
         }
     }
 }
@@ -57,6 +68,14 @@ fn handle_transfer(kind: &TransactionKind, account: &mut Account, amount: Decima
     }
 
     account.withdraw(amount)
+}
+
+fn handle_claim(kind: &TransactionKind, client: &mut Account, amount: Decimal) {
+    match kind {
+        TransactionKind::Dispute => client.dispute(amount),
+        TransactionKind::Resolve => client.resolve(amount),
+        _ => panic!("Unsupported"),
+    }
 }
 
 #[cfg(test)]
@@ -105,7 +124,7 @@ mod tests {
     fn test_dispute() {
         // Create transactions
         let deposit_tx = Transaction::new(TransactionKind::Deposit, 1, 1, Some(dec!(1)));
-        let dispute_tx = Transaction::new(TransactionKind::Dispute, 1, 1, Some(dec!(1)));
+        let dispute_tx = Transaction::new(TransactionKind::Dispute, 1, 1, None);
 
         // Create test engine and account
         let mut engine = PaymentsEngine::new();
@@ -119,6 +138,33 @@ mod tests {
         // Dispute on both sides
         engine.execute(dispute_tx);
         expected.dispute(dec!(1));
+        assert_eq!(engine.accounts.get(&1).unwrap(), &expected);
+    }
+
+    #[test]
+    fn test_resolve() {
+        // Create transactions
+        let deposit_tx = Transaction::new(TransactionKind::Deposit, 1, 1, Some(dec!(1)));
+        let dispute_tx = Transaction::new(TransactionKind::Dispute, 1, 1, None);
+        let resolve_tx = Transaction::new(TransactionKind::Resolve, 1, 1, None);
+
+        // Create test engine and account
+        let mut engine = PaymentsEngine::new();
+        let mut expected = Account::new(1);
+
+        // Deposit on both sides
+        engine.execute(deposit_tx);
+        expected.deposit(dec!(1));
+        assert_eq!(engine.accounts.get(&1).unwrap(), &expected);
+
+        // Dispute on both sides
+        engine.execute(dispute_tx);
+        expected.dispute(dec!(1));
+        assert_eq!(engine.accounts.get(&1).unwrap(), &expected);
+
+        // Resolve on both sides
+        engine.execute(resolve_tx);
+        expected.resolve(dec!(1));
         assert_eq!(engine.accounts.get(&1).unwrap(), &expected);
     }
 }
