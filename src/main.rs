@@ -1,3 +1,28 @@
-fn main() {
-    println!("Hello, world!");
+use std::{error::Error, fs::File, env};
+
+use csv::ReaderBuilder;
+
+fn main() -> Result<(), Box<dyn Error>> {
+    // Get the CSV reader
+    let file_path = get_first_arg()?;
+    let file = File::open(&file_path)?;
+    let mut reader = ReaderBuilder::new()
+        .trim(csv::Trim::All)
+        .has_headers(true)
+        .comment(Some(b'#'))
+        .from_reader(&file);
+
+    // Process transactions
+    loop {
+        // ...
+    }
+
+    // Print each client data
+
+    Ok(())
+}
+
+fn get_first_arg() -> Result<String, Box<dyn Error>> {
+    env::args().nth(1)
+        .ok_or_else(|| From::from("No argument provided"))
 }
