@@ -1,7 +1,8 @@
 use rust_decimal::Decimal;
 use rust_decimal_macros::dec;
+use serde::Serialize;
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Serialize)]
 pub struct Account {
     pub id: u16,
     pub available: Decimal,

@@ -1,4 +1,4 @@
-use std::{error::Error, fs::File, env};
+use std::{error::Error, fs::File, env, io};
 
 use csv::ReaderBuilder;
 use payments::{transaction::Transaction, payments_engine::PaymentsEngine};
@@ -22,8 +22,16 @@ fn main() -> Result<(), Box<dyn Error>> {
         engine.execute(transaction);
     }
 
-    // Print each client data
+    // Get the CSV writer
+    let mut writer = csv::Writer::from_writer(io::stdout());
 
+    // Print each customer's account data
+    for account in engine.accounts.values() {
+        writer.serialize(account)?;
+    }
+
+    // Flush CSV buffer to stdout
+    writer.flush()?;
     Ok(())
 }
 
