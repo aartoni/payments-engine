@@ -4,7 +4,7 @@ use serde::Deserialize;
 #[serde(rename_all = "snake_case")]
 pub enum TransactionKind {
     Deposit,
-    Withdraw,
+    Withdrawal,
     Dispute,
     Resolve,
     Chargeback,
