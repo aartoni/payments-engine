@@ -86,10 +86,11 @@ impl PaymentsEngine {
 fn handle_transfer(kind: &TransactionKind, account: &mut Account, amount: Decimal) -> bool {
     if *kind == TransactionKind::Deposit {
         account.deposit(amount);
-        return true;
+    } else {
+        account.withdraw(amount);
     }
 
-    account.withdraw(amount)
+    *kind == TransactionKind::Deposit
 }
 
 /// Perform the actual claim, that is: a dispute, a resolve or a chargeback.

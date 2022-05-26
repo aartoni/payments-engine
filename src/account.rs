@@ -45,8 +45,7 @@ impl Account {
     }
 
     /// Withdraw funds on the client account by decreasing the available and
-    /// total amounts. The method has no effect if funds are insufficients and
-    /// returns true in case of success.
+    /// total amounts. The method has no effect if funds are insufficients.
     ///
     /// # Example
     /// ```
@@ -60,14 +59,13 @@ impl Account {
     /// assert_eq!(account.available, dec!(0));
     /// assert_eq!(account.total, dec!(0));
     /// ```
-    pub fn withdraw(&mut self, amount: Decimal) -> bool {
+    pub fn withdraw(&mut self, amount: Decimal) {
         if amount > self.available {
-            return false;
+            return;
         }
 
         self.available -= amount;
         self.total -= amount;
-        true
     }
 
     /// Dispute a transaction by witholding funds.
