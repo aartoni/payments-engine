@@ -1,9 +1,8 @@
 [package]
 name = "payments"
 version = "0.1.0"
+authors = ["Alessio Artoni <alessio@artoni.org>"]
 edition = "2021"
-
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
 csv = "1.1"
