@@ -1,6 +1,7 @@
 use rust_decimal::Decimal;
 use rust_decimal_macros::dec;
 
+#[derive(Debug, PartialEq)]
 pub struct Account {
     pub id: u16,
     pub available: Decimal,

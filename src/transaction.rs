@@ -13,3 +13,10 @@ pub struct Transaction {
     pub id: u32,
     pub amount: Decimal,
 }
+
+impl Transaction {
+    #[must_use]
+    pub fn new(kind: TransactionKind, client_id: u16, id: u32, amount: Decimal) -> Self {
+        Self { kind, client_id, id, amount }
+    }
+}
