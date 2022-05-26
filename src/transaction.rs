@@ -11,12 +11,14 @@ pub struct Transaction {
     pub client_id: u16,
     #[serde(rename = "tx")]
     pub id: u32,
-    pub amount: Decimal,
+    pub amount: Option<Decimal>,
+    #[serde(skip)]
+    pub disputed: bool,
 }
 
 impl Transaction {
     #[must_use]
-    pub fn new(kind: TransactionKind, client_id: u16, id: u32, amount: Decimal) -> Self {
-        Self { kind, client_id, id, amount }
+    pub fn new(kind: TransactionKind, client_id: u16, id: u32, amount: Option<Decimal>) -> Self {
+        Self { kind, client_id, id, amount, disputed: false }
     }
 }

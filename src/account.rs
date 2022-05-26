@@ -37,6 +37,15 @@ impl Account {
         self.total -= amount;
         true
     }
+
+    pub fn dispute(&mut self, amount: Decimal) {
+        if amount > self.available {
+            return;
+        }
+
+        self.available -= amount;
+        self.held += amount;
+    }
 }
 
 #[cfg(test)]
@@ -72,5 +81,23 @@ mod tests {
         account.withdraw(dec!(0.5));
         assert_eq!(account.available, dec!(0.5));
         assert_eq!(account.total, dec!(0.5));
+    }
+
+    #[test]
+    fn test_dispute() {
+        let mut account = Account::new(1);
+        account.deposit(dec!(1));
+
+        // Try to dispute an invalid amount
+        account.dispute(dec!(2));
+        assert_eq!(account.available, dec!(1));
+        assert_eq!(account.held, dec!(0));
+        assert_eq!(account.total, dec!(1));
+
+        // Dispute a valid amount
+        account.dispute(dec!(0.5));
+        assert_eq!(account.available, dec!(0.5));
+        assert_eq!(account.held, dec!(0.5));
+        assert_eq!(account.total, dec!(1));
     }
 }
