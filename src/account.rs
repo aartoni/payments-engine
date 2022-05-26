@@ -2,6 +2,8 @@ use rust_decimal::Decimal;
 use rust_decimal_macros::dec;
 use serde::Serialize;
 
+/// A client account stating available, held and total funds, along with its
+/// locked/unlocked state flag and its identifier.
 #[derive(Debug, PartialEq, Serialize)]
 pub struct Account {
     pub id: u16,
@@ -23,11 +25,41 @@ impl Account {
         }
     }
 
+    /// Deposit funds on the client account by increasing the available and
+    /// total amounts.
+    ///
+    /// # Example
+    /// ```
+    /// use payments::account::Account;
+    /// use rust_decimal_macros::dec;
+    ///
+    /// let mut account = Account::new(1);
+    /// account.deposit(dec!(1));
+    ///
+    /// assert_eq!(account.available, dec!(1));
+    /// assert_eq!(account.total, dec!(1));
+    /// ```
     pub fn deposit(&mut self, amount: Decimal) {
         self.available += amount;
         self.total += amount;
     }
 
+    /// Withdraw funds on the client account by decreasing the available and
+    /// total amounts. The method has no effect if funds are insufficients and
+    /// returns true in case of success.
+    ///
+    /// # Example
+    /// ```
+    /// use payments::account::Account;
+    /// use rust_decimal_macros::dec;
+    ///
+    /// let mut account = Account::new(1);
+    /// account.deposit(dec!(1));
+    /// account.withdraw(dec!(1));
+    ///
+    /// assert_eq!(account.available, dec!(0));
+    /// assert_eq!(account.total, dec!(0));
+    /// ```
     pub fn withdraw(&mut self, amount: Decimal) -> bool {
         if amount > self.available {
             return false;
@@ -38,6 +70,21 @@ impl Account {
         true
     }
 
+    /// Dispute a transaction by witholding funds.
+    ///
+    /// # Example
+    /// ```
+    /// use payments::account::Account;
+    /// use rust_decimal_macros::dec;
+    ///
+    /// let mut account = Account::new(1);
+    /// account.deposit(dec!(1));
+    /// account.dispute(dec!(1));
+    ///
+    /// assert_eq!(account.available, dec!(0));
+    /// assert_eq!(account.held, dec!(1));
+    /// assert_eq!(account.total, dec!(1));
+    /// ```
     pub fn dispute(&mut self, amount: Decimal) {
         if amount > self.available {
             return;
@@ -47,6 +94,22 @@ impl Account {
         self.held += amount;
     }
 
+    /// Resolve a dispute by releasing funds.
+    ///
+    /// # Example
+    /// ```
+    /// use payments::account::Account;
+    /// use rust_decimal_macros::dec;
+    ///
+    /// let mut account = Account::new(1);
+    /// account.deposit(dec!(1));
+    /// account.dispute(dec!(1));
+    /// account.resolve(dec!(1));
+    ///
+    /// assert_eq!(account.available, dec!(1));
+    /// assert_eq!(account.held, dec!(0));
+    /// assert_eq!(account.total, dec!(1));
+    /// ```
     pub fn resolve(&mut self, amount: Decimal) {
         if amount > self.held {
             return;
@@ -56,6 +119,22 @@ impl Account {
         self.available += amount;
     }
 
+    /// Resolve a dispute by charging funds back.
+    ///
+    /// # Example
+    /// ```
+    /// use payments::account::Account;
+    /// use rust_decimal_macros::dec;
+    ///
+    /// let mut account = Account::new(1);
+    /// account.deposit(dec!(1));
+    /// account.dispute(dec!(1));
+    /// account.chargeback(dec!(1));
+    ///
+    /// assert_eq!(account.available, dec!(0));
+    /// assert_eq!(account.held, dec!(0));
+    /// assert_eq!(account.total, dec!(0));
+    /// ```
     pub fn chargeback(&mut self, amount: Decimal) {
         if amount > self.held {
             return;

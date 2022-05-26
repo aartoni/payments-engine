@@ -3,6 +3,8 @@ use serde::Deserialize;
 
 use crate::transaction_kind::TransactionKind;
 
+/// Represents a single transaction, this type is meant to be constructed from
+/// the CSV file, except for the `disputed` field.
 #[derive(Deserialize)]
 pub struct Transaction {
     #[serde(rename = "type")]

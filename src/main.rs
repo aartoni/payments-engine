@@ -35,6 +35,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     Ok(())
 }
 
+/// Get the first command line argument
 fn get_first_arg() -> Result<String, Box<dyn Error>> {
     env::args().nth(1)
         .ok_or_else(|| From::from("No argument provided"))

@@ -4,6 +4,8 @@ use rust_decimal::Decimal;
 
 use crate::{account::Account, transaction::Transaction, transaction_kind::TransactionKind};
 
+/// A payment processing engine capable of executing deposits and withdraws as
+/// well as handling disputes.
 pub struct PaymentsEngine {
     pub accounts: HashMap<u16, Account>,
     history: HashMap<u32, Transaction>,
@@ -12,17 +14,35 @@ pub struct PaymentsEngine {
 impl PaymentsEngine {
     #[must_use]
     pub fn new() -> Self {
-        Self {
-            accounts: HashMap::new(),
-            history: HashMap::new(),
-        }
+        Self { accounts: HashMap::new(), history: HashMap::new() }
     }
 
+    /// Execute the transaction, this will alter the corresponding account
+    /// accordingly.
+    ///
+    /// # Example
+    /// ```
+    /// use payments::payments_engine::PaymentsEngine;
+    /// use payments::transaction_kind::TransactionKind;
+    /// use payments::transaction::Transaction;
+    /// use rust_decimal_macros::dec;
+    ///
+    /// let tx = Transaction::new(TransactionKind::Deposit, 1, 1, Some(dec!(1)));
+    /// let mut engine = PaymentsEngine::new();
+    ///
+    /// engine.execute(tx);
+    /// assert_eq!(engine.accounts.get(&1).unwrap().available, dec!(1));
+    /// ```
+    ///
+    /// # Panics
+    ///
+    /// See assumptions made in the `README.md` file.
     pub fn execute(&mut self, tx: Transaction) {
         match tx.kind {
             TransactionKind::Deposit | TransactionKind::Withdrawal => {
                 // Find the account, insert if missing
-                let account = self.accounts
+                let account = self
+                    .accounts
                     .entry(tx.client_id)
                     .or_insert_with(|| Account::new(tx.client_id));
 
@@ -31,7 +51,7 @@ impl PaymentsEngine {
                     // Transaction succeded, add it to the history
                     self.history.insert(tx.id, tx);
                 }
-            },
+            }
             _ => {
                 let disputed_tx = self.history.get_mut(&tx.id);
 
@@ -56,11 +76,13 @@ impl PaymentsEngine {
 
                 let account = self.accounts.get_mut(&tx.client_id).unwrap();
                 handle_claim(&tx.kind, account, disputed_tx.amount.unwrap());
-            },
+            }
         }
     }
 }
 
+/// Perform the actual transfer, that is: a deposit or a withdrawal. Returns
+/// true if the transaction should be added to the history.
 fn handle_transfer(kind: &TransactionKind, account: &mut Account, amount: Decimal) -> bool {
     if *kind == TransactionKind::Deposit {
         account.deposit(amount);
@@ -70,6 +92,7 @@ fn handle_transfer(kind: &TransactionKind, account: &mut Account, amount: Decima
     account.withdraw(amount)
 }
 
+/// Perform the actual claim, that is: a dispute, a resolve or a chargeback.
 fn handle_claim(kind: &TransactionKind, client: &mut Account, amount: Decimal) {
     match kind {
         TransactionKind::Dispute => client.dispute(amount),
@@ -245,12 +268,12 @@ mod tests {
         // Create test engine and account
         let mut engine = PaymentsEngine::new();
 
-        // Switch flag state
+        // Toggle flag state
         engine.execute(deposit_tx);
         engine.execute(dispute_tx);
         assert_eq!(engine.history.get(&1).unwrap().disputed, true);
 
-        // Switch flag state back
+        // Toggle flag state back
         engine.execute(chargeback_tx);
         assert_eq!(engine.history.get(&1).unwrap().disputed, false);
     }
