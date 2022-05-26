@@ -61,10 +61,6 @@ You can run via cargo:
 
     cargo run
 
-or build and run via Docker:
-
-    docker build -t orderbook . && docker run -it orderbook
-
 ## Testing
 
 To run the test you can
